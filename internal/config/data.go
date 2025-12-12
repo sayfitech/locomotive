@@ -1,6 +1,8 @@
 package config
 
 import (
+	"regexp"
+
 	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_axiom"
 	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_betterstack"
 	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_datadog"
@@ -9,6 +11,8 @@ import (
 	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_papertrail"
 	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_sentry"
 )
+
+var schemeRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://`)
 
 const (
 	WebhookModeJson        WebhookMode = "json"
@@ -37,13 +41,13 @@ var WebhookModeToConfig = map[WebhookMode]WebhookConfig{
 		HTTPLogReconstructorFunc:        reconstruct_json.HttpLogsJsonLines,
 	},
 	WebhookModeLoki: {
-		ExpectedHostContains:            "loki",
+		ExpectedHostContains:            []string{"loki", "grafana"},
 		Headers:                         map[string]string{},
 		EnvironmentLogReconstructorFunc: reconstruct_loki.EnvironmentLogStreams,
 		HTTPLogReconstructorFunc:        reconstruct_loki.HttpLogStreams,
 	},
 	WebhookModePapertrail: {
-		ExpectedHostContains: "solarwinds",
+		ExpectedHostContains: []string{"solarwinds"},
 		ExpectedHeaders:      []string{"Authorization"},
 		Headers: map[string]string{
 			// Note: Papertrail accepts JSON Lines, yet only accepts the JSON content type.
@@ -53,28 +57,28 @@ var WebhookModeToConfig = map[WebhookMode]WebhookConfig{
 		HTTPLogReconstructorFunc:        reconstruct_papertrail.HttpLogsJsonLines,
 	},
 	WebhookModeDatadog: {
-		ExpectedHostContains:            "datadog",
+		ExpectedHostContains:            []string{"datadog"},
 		ExpectedHeaders:                 []string{"DD-API-KEY", "DD-APPLICATION-KEY"},
 		Headers:                         map[string]string{},
 		EnvironmentLogReconstructorFunc: reconstruct_datadog.EnvironmentLogsJsonArray,
 		HTTPLogReconstructorFunc:        reconstruct_datadog.HttpLogsJsonArray,
 	},
 	WebhookModeAxiom: {
-		ExpectedHostContains:            "axiom",
+		ExpectedHostContains:            []string{"axiom"},
 		ExpectedHeaders:                 []string{"Authorization"},
 		Headers:                         map[string]string{},
 		EnvironmentLogReconstructorFunc: reconstruct_axiom.EnvironmentLogsJsonArray,
 		HTTPLogReconstructorFunc:        reconstruct_axiom.HttpLogsJsonArray,
 	},
 	WebhookModeBetterstack: {
-		ExpectedHostContains:            "betterstack",
+		ExpectedHostContains:            []string{"betterstack"},
 		ExpectedHeaders:                 []string{"Authorization"},
 		Headers:                         map[string]string{},
 		EnvironmentLogReconstructorFunc: reconstruct_betterstack.EnvironmentLogsJsonArray,
 		HTTPLogReconstructorFunc:        reconstruct_betterstack.HttpLogsJsonArray,
 	},
 	WebhookModeSentry: {
-		ExpectedHostContains: "sentry",
+		ExpectedHostContains: []string{"sentry"},
 		ExpectedHeaders:      []string{"X-Sentry-Auth"},
 		Headers: map[string]string{
 			"Content-Type": "application/x-sentry-envelope",

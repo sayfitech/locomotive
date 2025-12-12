@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"sync/atomic"
 
 	"github.com/brody192/locomotive/internal/logger"
@@ -17,8 +18,14 @@ func handleDeployLogsAsync(ctx context.Context, deployLogsProcessed *atomic.Int6
 			case <-ctx.Done():
 				return
 			case logs := <-serviceLogTrack:
-				if err := webhook.SendDeployLogsWebhook(logs); err != nil {
-					logger.Stderr.Error("error sending deploy logs webhook(s)", logger.ErrAttr(err))
+				if serializedLogs, err := webhook.SendDeployLogsWebhook(logs); err != nil {
+					attrs := []any{logger.ErrAttr(err)}
+
+					if serializedLogs != nil {
+						attrs = append(attrs, slog.String("serialized_logs", string(serializedLogs)))
+					}
+
+					logger.Stderr.Error("error sending deploy logs webhook(s)", attrs...)
 
 					continue
 				}
@@ -36,8 +43,14 @@ func handleHttpLogsAsync(ctx context.Context, httpLogsProcessed *atomic.Int64, h
 			case <-ctx.Done():
 				return
 			case logs := <-httpLogTrack:
-				if err := webhook.SendHttpLogsWebhook(logs); err != nil {
-					logger.Stderr.Error("error sending http logs webhook(s)", logger.ErrAttr(err))
+				if serializedLogs, err := webhook.SendHttpLogsWebhook(logs); err != nil {
+					attrs := []any{logger.ErrAttr(err)}
+
+					if serializedLogs != nil {
+						attrs = append(attrs, slog.String("serialized_logs", string(serializedLogs)))
+					}
+
+					logger.Stderr.Error("error sending http logs webhook(s)", attrs...)
 
 					continue
 				}

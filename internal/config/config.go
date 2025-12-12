@@ -59,7 +59,14 @@ func init() {
 				return strconv.ParseBool(strings.TrimSpace(envVar))
 			},
 			reflect.TypeOf(url.URL{}): func(envVar string) (any, error) {
-				if u, err := url.Parse(strings.TrimSpace(envVar)); err != nil {
+				envVarTrimmed := strings.TrimSpace(envVar)
+
+				if !schemeRegex.MatchString(envVarTrimmed) {
+					logger.Stderr.Warn("found webhook url without scheme, adding default scheme: https")
+					envVarTrimmed = "https://" + envVarTrimmed
+				}
+
+				if u, err := url.ParseRequestURI(envVarTrimmed); err != nil {
 					return nil, err
 				} else {
 					return *u, nil
@@ -97,11 +104,11 @@ func init() {
 
 	for mode, config := range WebhookModeToConfig {
 		if mode == Global.WebhookMode {
-			if !strings.Contains(Global.WebhookUrl.Hostname(), config.ExpectedHostContains) {
-				hostAttrs = append(hostAttrs, slog.String("expected_host_contains", config.ExpectedHostContains))
+			if !containsAnyHost(Global.WebhookUrl.Hostname(), config.ExpectedHostContains) {
+				hostAttrs = append(hostAttrs, slog.String("expected_host_contains", strings.Join(config.ExpectedHostContains, " OR ")))
 			}
 		} else {
-			if config.ExpectedHostContains != "" && strings.Contains(Global.WebhookUrl.Hostname(), config.ExpectedHostContains) {
+			if len(config.ExpectedHostContains) > 0 && containsAnyHost(Global.WebhookUrl.Hostname(), config.ExpectedHostContains) {
 				hostAttrs = append(hostAttrs, slog.Any("suggested_mode", mode))
 				break
 			}

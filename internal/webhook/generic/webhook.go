@@ -20,22 +20,22 @@ var acceptedStatusCodes = []int{
 	http.StatusCreated,
 }
 
-func SendWebhookForDeployLogs(logs []environment_logs.EnvironmentLogWithMetadata, client *http.Client) error {
+func SendWebhookForDeployLogs(logs []environment_logs.EnvironmentLogWithMetadata, client *http.Client) (serializedLogs []byte, err error) {
 	payload, err := config.WebhookModeToConfig[config.Global.WebhookMode].EnvironmentLogReconstructorFunc(logs)
 	if err != nil {
-		return fmt.Errorf("failed to reconstruct deploy log lines: %w", err)
+		return nil, fmt.Errorf("failed to reconstruct deploy log lines: %w", err)
 	}
 
-	return sendRawWebhook(payload, config.Global.WebhookUrl, config.Global.AdditionalHeaders, client)
+	return payload, sendRawWebhook(payload, config.Global.WebhookUrl, config.Global.AdditionalHeaders, client)
 }
 
-func SendWebhookForHttpLogs(logs []http_logs.DeploymentHttpLogWithMetadata, client *http.Client) error {
+func SendWebhookForHttpLogs(logs []http_logs.DeploymentHttpLogWithMetadata, client *http.Client) (serializedLogs []byte, err error) {
 	payload, err := config.WebhookModeToConfig[config.Global.WebhookMode].HTTPLogReconstructorFunc(logs)
 	if err != nil {
-		return fmt.Errorf("failed to reconstruct http log lines: %w", err)
+		return nil, fmt.Errorf("failed to reconstruct http log lines: %w", err)
 	}
 
-	return sendRawWebhook(payload, config.Global.WebhookUrl, config.Global.AdditionalHeaders, client)
+	return payload, sendRawWebhook(payload, config.Global.WebhookUrl, config.Global.AdditionalHeaders, client)
 }
 
 func sendRawWebhook(logs []byte, url url.URL, additionalHeaders config.AdditionalHeaders, client *http.Client) error {
