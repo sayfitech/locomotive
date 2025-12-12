@@ -16,7 +16,7 @@ type (
 )
 
 type WebhookConfig struct {
-	ExpectedHostContains string
+	ExpectedHostContains []string
 	ExpectedHeaders      []string
 
 	Headers AdditionalHeaders
