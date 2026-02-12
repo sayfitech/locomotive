@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"log/slog"
 	"sync/atomic"
 
@@ -29,7 +30,7 @@ func handleDeployLogsAsync(ctx context.Context, deployLogsProcessed *atomic.Int6
 					)
 
 					// Compare ranks
-					if logSeverity.Rank() >= minSeverity.Rank() {
+					if logSeverity.Rank() >= min_severity.Rank() {
 						filteredLogs = append(filteredLogs, logEntry)
 					}
 				}
