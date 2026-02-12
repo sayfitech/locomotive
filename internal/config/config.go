@@ -72,6 +72,9 @@ func init() {
 					return *u, nil
 				}
 			},
+			reflect.TypeOf(SeverityLevel("")): func(envVar string) (any, error) {
+				return SeverityLevel(strings.ToLower(strings.TrimSpace(envVar))), nil
+			},
 		},
 	}); err != nil {
 		if er, ok := err.(env.AggregateError); ok {

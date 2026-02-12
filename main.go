@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/brody192/locomotive/internal/config"
@@ -43,6 +44,12 @@ func main() {
 
 		os.Exit(1)
 	}
+	if !config.Global.MinSeverity.IsValid() {
+		logger.Stderr.Error("invalid MIN_SEVERITY value",
+			slog.String("min_severity", string(config.Global.MinSeverity)),
+		)
+		os.Exit(1)
+	}
 
 	logger.Stdout.Info("The locomotive is ready to depart...",
 		slog.String("webhook_url_host", config.Global.WebhookUrl.Host),
@@ -51,8 +58,9 @@ func main() {
 		slog.Any("webhook_mode", config.Global.WebhookMode),
 		slog.Bool("enable_http_logs", config.Global.EnableHttpLogs),
 		slog.Bool("enable_deploy_logs", config.Global.EnableDeployLogs),
+		slog.String("min_severity", string(config.Global.MinSeverity)),
 	)
-
+	fmt.Printf("severity level: %s\n", config.Global.MinSeverity)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -64,7 +72,7 @@ func main() {
 
 	reportStatusAsync(&deployLogsProcessed, &httpLogsProcessed)
 
-	handleDeployLogsAsync(ctx, &deployLogsProcessed, serviceLogTrack)
+	handleDeployLogsAsync(ctx, &deployLogsProcessed, serviceLogTrack, config.Global.MinSeverity)
 	handleHttpLogsAsync(ctx, &httpLogsProcessed, httpLogTrack)
 
 	errGroup := errgroup.NewErrGroup()

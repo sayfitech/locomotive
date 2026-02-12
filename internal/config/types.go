@@ -9,6 +9,43 @@ import (
 	"github.com/flexstack/uuid"
 )
 
+type SeverityLevel string
+
+const (
+	SeverityDebug SeverityLevel = "debug"
+	SeverityInfo  SeverityLevel = "info"
+	SeverityWarn  SeverityLevel = "warn"
+	SeverityError SeverityLevel = "error"
+	SeverityFatal SeverityLevel = "fatal"
+)
+
+var severityRank = map[SeverityLevel]int{
+	SeverityDebug: 0,
+	SeverityInfo:  1,
+	SeverityWarn:  2,
+	SeverityError: 3,
+	SeverityFatal: 4,
+}
+
+func (s SeverityLevel) IsValid() bool {
+	_, ok := severityRank[s]
+	return ok
+}
+func (s SeverityLevel) Rank() int {
+	switch s {
+	case SeverityDebug:
+		return 0
+	case SeverityInfo:
+		return 1
+	case SeverityWarn:
+		return 2
+	case SeverityError:
+		return 3
+	default:
+		return 0 // fallback to debug
+	}
+}
+
 type (
 	AdditionalHeaders map[string]string
 
@@ -34,6 +71,8 @@ type config struct {
 	AdditionalHeaders AdditionalHeaders `env:"ADDITIONAL_HEADERS"`
 	WebhookMode       WebhookMode       `env:"WEBHOOK_MODE" envDefault:"json"`
 
+	MinSeverity SeverityLevel `env:"MIN_SEVERITY" envDefault:"debug"`
+	
 	ReportStatusEvery time.Duration `env:"REPORT_STATUS_EVERY" envDefault:"1m"`
 
 	EnableHttpLogs   bool `env:"ENABLE_HTTP_LOGS" envDefault:"false"`
