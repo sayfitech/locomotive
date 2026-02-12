@@ -13,10 +13,12 @@ func VerifyAllServicesExistWithinEnvironment(g *GraphQLClient, services []uuid.U
 	variables := map[string]any{
 		"id": environmentID,
 	}
-	fmt.Printf("environment variables: %s", variables)
 	if err := g.Client.Exec(context.Background(), queries.EnvironmentQuery, &environment, variables); err != nil {
 		return false, nil, nil, err
 	}
+	fmt.Printf("Services: %s\n", services)
+	fmt.Printf("environment: %s\n", environment)
+	
 
 	foundServices := []uuid.UUID{}
 	missingServices := []uuid.UUID{}
