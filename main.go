@@ -16,6 +16,25 @@ import (
 )
 
 func main() {
+	fmt.Println("🚂 Locomotive environment variables:")
+	envVars := []string{
+		"LOCOMOTIVE_ENVIRONMENT_ID",
+		"LOCOMOTIVE_SERVICE_IDS",
+		"LOCOMOTIVE_MIN_SEVERITY",
+		"LOCOMOTIVE_ENABLE_DEPLOY_LOGS",
+		"LOCOMOTIVE_ENABLE_HTTP_LOGS",
+		"LOCOMOTIVE_WEBHOOK_MODE",
+		"RAILWAY_API_KEY",
+		"SENTRY_DSN",
+	}
+	for _, key := range envVars {
+		val := os.Getenv(key)
+		if val == "" {
+			fmt.Printf("%s = <not set>\n", key)
+		} else {
+			fmt.Printf("%s = %s\n", key, val)
+		}
+	}
 	logger.Stdout.Info("Preparing the locomotive for departure...")
 
 	gqlClient, err := railway.NewClient(&railway.GraphQLClient{
