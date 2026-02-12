@@ -141,6 +141,35 @@ Configuration is done through environment variables. See explanation and example
 
     </br>
 
+- `LOCOMOTIVE_SEVERITY` - Minimum log severity level to forward.
+
+    **Optional**.
+
+    - Default: `debug`
+    - Logs below this severity will be ignored.
+
+    Supported values (case-insensitive):
+
+    - `debug`
+    - `info`
+    - `warn`
+    - `error`
+    - `fatal`
+
+    Example:
+
+    ```bash
+    LOCOMOTIVE_SEVERITY=warn
+    ```
+
+    This will forward only:
+    - `warn`
+    - `error`
+    - `fatal`
+    - 
+
+    </br>
+
 ### Provider-specific setup:
 
 #### Papertrail
@@ -224,6 +253,12 @@ Configuration is done through environment variables. See explanation and example
 - `LOCOMOTIVE_ADDITIONAL_HEADERS` - `X-Sentry-Auth=Sentry sentry_key=<SENTRY_KEY>`
 
     The key can again be found in the 'Client Keys (DSN)' section of the Sentry project settings; it will be the user part of the given DSN.
+
+Given a Sentry DSN in this format:
+
+```
+https://<SENTRY_KEY>@<SENTRY_HOSTNAME>/<PROJECT_ID>
+```
 
     </br>
 
