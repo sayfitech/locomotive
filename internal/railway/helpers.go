@@ -2,7 +2,7 @@ package railway
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/brody192/locomotive/internal/railway/gql/queries"
 	"github.com/flexstack/uuid"
 )
@@ -13,7 +13,7 @@ func VerifyAllServicesExistWithinEnvironment(g *GraphQLClient, services []uuid.U
 	variables := map[string]any{
 		"id": environmentID,
 	}
-
+	fmt.Printf("environment variables: %s", variables)
 	if err := g.Client.Exec(context.Background(), queries.EnvironmentQuery, &environment, variables); err != nil {
 		return false, nil, nil, err
 	}
