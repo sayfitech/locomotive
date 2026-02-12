@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 
 	"github.com/brody192/locomotive/internal/config"
 	"github.com/brody192/locomotive/internal/railway/subscribe/environment_logs"
@@ -65,11 +66,12 @@ func sendRawWebhook(logs []byte, url url.URL, additionalHeaders config.Additiona
 
 	if !slices.Contains(acceptedStatusCodes, res.StatusCode) {
 		body, err := io.ReadAll(res.Body)
-		if err != nil {
+		bodyStr := strings.TrimSpace(string(body))
+		if err != nil || len(bodyStr) == 0 {
 			return fmt.Errorf("non success status code: %d", res.StatusCode)
 		}
 
-		return fmt.Errorf("non success status code: %d; with body: %s", res.StatusCode, body)
+		return fmt.Errorf("non success status code: %d; with body: %s", res.StatusCode, bodyStr)
 	}
 
 	return nil
