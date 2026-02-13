@@ -9,20 +9,13 @@ import (
 
 func VerifyAllServicesExistWithinEnvironment(g *GraphQLClient, services []uuid.UUID, environmentID uuid.UUID) (bool, []uuid.UUID, []uuid.UUID, error) {
 	environment := &queries.EnvironmentData{}
-
+	fmt.Println("EnvironmentID:", environmentID)
 	variables := map[string]any{
 		"id": environmentID,
 	}
-	fmt.Printf("context.Background() => %s\n", context.Background())
-	fmt.Printf("queries.EnvironmentQuery => %s\n", queries.EnvironmentQuery)
-	fmt.Printf("&environment => %s\n", &environment)
-	fmt.Printf("variables => %s\n", variables)
-	
 	if err := g.Client.Exec(context.Background(), queries.EnvironmentQuery, &environment, variables); err != nil {
 		return false, nil, nil, err
 	}
-	fmt.Printf("Services: %s\n", services)
-	fmt.Printf("environment: %s\n", environment)
 	
 
 	foundServices := []uuid.UUID{}
