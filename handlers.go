@@ -16,7 +16,6 @@ import (
 
 func handleDeployLogsAsync(ctx context.Context, deployLogsProcessed *atomic.Int64, serviceLogTrack chan []environment_logs.EnvironmentLogWithMetadata, min_severity config.SeverityLevel) {
 	go func() {
-		fmt.Printf("level: %s\n", min_severity)
 		for {
 			select {
 			case <-ctx.Done():

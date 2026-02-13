@@ -9,7 +9,6 @@ import (
 
 func VerifyAllServicesExistWithinEnvironment(g *GraphQLClient, services []uuid.UUID, environmentID uuid.UUID) (bool, []uuid.UUID, []uuid.UUID, error) {
 	environment := &queries.EnvironmentData{}
-	fmt.Println("EnvironmentID:", environmentID)
 	variables := map[string]any{
 		"id": environmentID,
 	}
