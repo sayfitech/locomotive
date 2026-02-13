@@ -141,7 +141,7 @@ Configuration is done through environment variables. See explanation and example
 
     </br>
 
-- `LOCOMOTIVE_SEVERITY` - Minimum log severity level to forward.
+- `LOCOMOTIVE_MIN_SEVERITY` - Minimum log severity level to forward.
 
     **Optional**.
 
@@ -159,7 +159,7 @@ Configuration is done through environment variables. See explanation and example
     Example:
 
     ```bash
-    LOCOMOTIVE_SEVERITY=warn
+    LOCOMOTIVE_MIN_SEVERITY=warn
     ```
 
     This will forward only:
