@@ -2,7 +2,6 @@ package railway
 
 import (
 	"context"
-	"fmt"
 	"github.com/brody192/locomotive/internal/railway/gql/queries"
 	"github.com/flexstack/uuid"
 )
