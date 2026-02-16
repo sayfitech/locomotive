@@ -39,10 +39,40 @@ func handleDeployLogsAsync(
 						strings.ToLower(strings.TrimSpace(logEntry.Log.Severity)),
 					)
 
-					// Compare ranks
-					if logSeverity.Rank() >= filter.Min_severity.Rank() {
-						filteredLogs = append(filteredLogs, logEntry)
+					if logSeverity.Rank() < filter.Min_severity.Rank() {
+						continue
 					}
+
+					logMsg := logEntry.Log.Message
+
+					if len(filter.Whitelist) > 0 {
+						matched := false
+						for _, w := range filter.Whitelist {
+							if strings.Contains(logMsg, w) {
+								matched = true
+								break
+							}
+						}
+						if !matched {
+							continue // not in whitelist
+						}
+					}
+
+					if len(filter.Blacklist) > 0 {
+						blocked := false
+						for _, b := range filter.Blacklist {
+							if strings.Contains(logMsg, b) {
+								blocked = true
+								break
+							}
+						}
+						if blocked {
+							continue // blocked by blacklist
+						}
+					}
+
+
+					filteredLogs = append(filteredLogs, logEntry)
 				}
 
 				if len(filteredLogs) == 0 {
