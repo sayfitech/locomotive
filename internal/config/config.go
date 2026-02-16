@@ -75,6 +75,28 @@ func init() {
 			reflect.TypeOf(SeverityLevel("")): func(envVar string) (any, error) {
 				return SeverityLevel(strings.ToLower(strings.TrimSpace(envVar))), nil
 			},
+			reflect.TypeOf([]string{}): func(envVar string) (any, error) {
+				envVarTrimmed := strings.TrimSpace(envVar)
+
+				// If empty, return empty slice
+				if envVarTrimmed == "" {
+					return []string{}, nil
+				}
+
+				parts := strings.Split(envVarTrimmed, ",")
+
+				result := make([]string, 0, len(parts))
+
+				for _, part := range parts {
+					partTrimmed := strings.TrimSpace(part)
+					if partTrimmed == "" {
+						continue
+					}
+					result = append(result, partTrimmed)
+				}
+
+				return result, nil
+			},
 		},
 	}); err != nil {
 		if er, ok := err.(env.AggregateError); ok {

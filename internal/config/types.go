@@ -72,6 +72,9 @@ type config struct {
 	WebhookMode       WebhookMode       `env:"WEBHOOK_MODE" envDefault:"json"`
 
 	MinSeverity SeverityLevel `env:"MIN_SEVERITY" envDefault:"debug"`
+
+	Whitelist []string `env:"WHITELIST" envSeparator:"," envDefault:""`
+	Blacklist []string `env:"BLACKLIST" envSeparator:"," envDefault:""`
 	
 	ReportStatusEvery time.Duration `env:"REPORT_STATUS_EVERY" envDefault:"1m"`
 

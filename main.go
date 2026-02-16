@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
-	"fmt"
 	"sync/atomic"
 
 	"github.com/brody192/locomotive/internal/config"
@@ -61,6 +61,8 @@ func main() {
 		slog.String("min_severity", string(config.Global.MinSeverity)),
 	)
 	fmt.Printf("severity level: %s\n", config.Global.MinSeverity)
+	fmt.Printf("whitelist filter: %s\n", config.Global.Whitelist)
+	fmt.Printf("blacklist filter: %s\n", config.Global.Blacklist)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -72,7 +74,16 @@ func main() {
 
 	reportStatusAsync(&deployLogsProcessed, &httpLogsProcessed)
 
-	handleDeployLogsAsync(ctx, &deployLogsProcessed, serviceLogTrack, config.Global.MinSeverity)
+	handleDeployLogsAsync(
+		ctx,
+		&deployLogsProcessed,
+		serviceLogTrack,
+		FilterSettings{
+			Min_severity: config.Global.MinSeverity,
+			Whitelist:    config.Global.Whitelist,
+			Blacklist:    config.Global.Blacklist,
+		},
+	)
 	handleHttpLogsAsync(ctx, &httpLogsProcessed, httpLogTrack)
 
 	errGroup := errgroup.NewErrGroup()

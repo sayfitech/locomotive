@@ -13,7 +13,19 @@ import (
 	"github.com/brody192/locomotive/internal/webhook"
 )
 
-func handleDeployLogsAsync(ctx context.Context, deployLogsProcessed *atomic.Int64, serviceLogTrack chan []environment_logs.EnvironmentLogWithMetadata, min_severity config.SeverityLevel) {
+type FilterSettings struct{
+	Min_severity config.SeverityLevel
+	Whitelist []string
+	Blacklist []string
+}
+
+func handleDeployLogsAsync(
+	ctx context.Context,
+	deployLogsProcessed *atomic.Int64,
+	serviceLogTrack chan []environment_logs.EnvironmentLogWithMetadata,
+	filter FilterSettings,
+	// min_severity config.SeverityLevel
+) {
 	go func() {
 		for {
 			select {
@@ -28,7 +40,7 @@ func handleDeployLogsAsync(ctx context.Context, deployLogsProcessed *atomic.Int6
 					)
 
 					// Compare ranks
-					if logSeverity.Rank() >= min_severity.Rank() {
+					if logSeverity.Rank() >= filter.Min_severity.Rank() {
 						filteredLogs = append(filteredLogs, logEntry)
 					}
 				}
