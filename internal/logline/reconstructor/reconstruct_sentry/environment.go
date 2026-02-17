@@ -2,7 +2,7 @@ package reconstruct_sentry
 
 import (
 	"bytes"
-	"cmp"
+	// "cmp"
 	"fmt"
 	"strconv"
 	"time"
@@ -10,7 +10,7 @@ import (
 	"github.com/tidwall/sjson"
 
 	"github.com/brody192/locomotive/internal/logline/reconstructor"
-	"github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_sentry/sentry_attribute"
+	// "github.com/brody192/locomotive/internal/logline/reconstructor/reconstruct_sentry/sentry_attribute"
 	"github.com/brody192/locomotive/internal/railway/subscribe/environment_logs"
 	"github.com/brody192/locomotive/internal/util"
 )
@@ -18,56 +18,91 @@ import (
 func EnvironmentLogsEnvelope(logs []environment_logs.EnvironmentLogWithMetadata) ([]byte, error) {
 	jsonObject := bytes.Buffer{}
 
+	// len(logs) == 1
+	log := logs[0]
 	eventID := generateRandomHexString()
-	timestamp := time.Now().Format(time.RFC3339Nano)
+	timestamp := log.Log.Timestamp.Format(time.RFC3339Nano)
 
+	// --- derive server_name ---
+	serverName := log.Metadata["service_name"]
+	if serverName == "" {
+		serverName = log.Metadata["service_id"]
+	}
+
+	// --- derive environment ---
+	environmentName := log.Metadata["environment_name"]
+	if environmentName == "" {
+		environmentName = "production"
+	}
+
+	// --- Line One ---
 	firstLineData := LineOne
 	firstLineData, _ = sjson.Set(firstLineData, "event_id", eventID)
 	firstLineData, _ = sjson.Set(firstLineData, "sent_at", timestamp)
-
 	jsonObject.WriteString(firstLineData)
 	jsonObject.WriteByte('\n')
 
+	// --- Line Two ---
 	secondLineData := LineTwo
-	secondLineData, _ = sjson.Set(secondLineData, "item_count", len(logs))
-
+	secondLineData, _ = sjson.Set(secondLineData, "item_count", 1)
 	jsonObject.WriteString(secondLineData)
 	jsonObject.WriteByte('\n')
 
+	// --- Line Three (Event) ---
 	thirdLineData := LineThree
 	thirdLineData, _ = sjson.Set(thirdLineData, "event_id", eventID)
 	thirdLineData, _ = sjson.Set(thirdLineData, "timestamp", timestamp)
+	thirdLineData, _ = sjson.Set(thirdLineData, "platform", "go")
+	thirdLineData, _ = sjson.Set(thirdLineData, "level", normalizeLevel(log.Log.Severity))
+	thirdLineData, _ = sjson.Set(thirdLineData, "message", util.StripAnsi(log.Log.Message))
+	thirdLineData, _ = sjson.Set(thirdLineData, "server_name", serverName)
+	thirdLineData, _ = sjson.Set(thirdLineData, "environment", environmentName)
 
-	for i := range logs {
-		item := Item
-		item, _ = sjson.Set(item, "timestamp", cmp.Or(reconstructor.TryExtractTimestamp(logs[i]), logs[i].Log.Timestamp).Format(time.RFC3339Nano))
-		item, _ = sjson.Set(item, "trace_id", generateRandomHexString())
-		item, _ = sjson.Set(item, "level", normalizeLevel(logs[i].Log.Severity))
-		item, _ = sjson.Set(item, "severity_number", getSeverityNumber(logs[i].Log.Severity))
-		item, _ = sjson.Set(item, "body", util.StripAnsi(logs[i].Log.Message))
-
-		for _, attribute := range logs[i].Log.Attributes {
-			// We have already extracted the common timestamp attribute and set it on the current item
-			if reconstructor.IsCommonTimeStampAttribute(attribute.Key) {
-				continue
-			}
-
-			// Railway's API returns the values as JSON strings, so we need to unquote them
-			if s, err := strconv.Unquote(attribute.Value); err == nil {
-				attribute.Value = s
-			}
-
-			for key, value := range stringToSentryAttributes(attribute.Key, attribute.Value) {
-				item, _ = sjson.Set(item, fmt.Sprintf("attributes.%s", key), value)
-			}
-		}
-
-		for key, value := range logs[i].Metadata {
-			item, _ = sjson.Set(item, fmt.Sprintf("attributes._metadata__%s", key), sentry_attribute.StringValue(value))
-		}
-
-		thirdLineData, _ = sjson.SetRaw(thirdLineData, fmt.Sprintf("items.%d", i), item)
+	// --- Relevant tags (IDs only) ---
+	if v := log.Metadata["project_id"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.project_id", v)
 	}
+	if v := log.Metadata["environment_id"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.environment_id", v)
+	}
+	if v := log.Metadata["service_id"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.service_id", v)
+
+		// Add service_id to fingerprint for grouping isolation
+		thirdLineData, _ = sjson.Set(thirdLineData, "fingerprint.0", "{{ default }}")
+		thirdLineData, _ = sjson.Set(thirdLineData, "fingerprint.1", v)
+	}
+	if v := log.Metadata["deployment_id"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.deployment_id", v)
+	}
+	if v := log.Metadata["deployment_instance_id"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.deployment_instance_id", v)
+	}
+	if v := log.Metadata["log_type"]; v != "" {
+		thirdLineData, _ = sjson.Set(thirdLineData, "tags.log_type", v)
+	}
+
+	// --- Build item ---
+	item := Item
+	item, _ = sjson.Set(item, "timestamp", timestamp)
+	item, _ = sjson.Set(item, "trace_id", generateRandomHexString())
+	item, _ = sjson.Set(item, "level", normalizeLevel(log.Log.Severity))
+	item, _ = sjson.Set(item, "severity_number", getSeverityNumber(log.Log.Severity))
+	item, _ = sjson.Set(item, "body", util.StripAnsi(log.Log.Message))
+
+	for _, attribute := range log.Log.Attributes {
+		if reconstructor.IsCommonTimeStampAttribute(attribute.Key) {
+			continue
+		}
+		if s, err := strconv.Unquote(attribute.Value); err == nil {
+			attribute.Value = s
+		}
+		for key, value := range stringToSentryAttributes(attribute.Key, attribute.Value) {
+			item, _ = sjson.Set(item, fmt.Sprintf("attributes.%s", key), value)
+		}
+	}
+
+	thirdLineData, _ = sjson.SetRaw(thirdLineData, "items.0", item)
 
 	jsonObject.WriteString(thirdLineData)
 	jsonObject.WriteByte('\n')

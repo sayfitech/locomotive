@@ -23,6 +23,9 @@ var acceptedStatusCodes = []int{
 
 func SendWebhookForDeployLogs(logs []environment_logs.EnvironmentLogWithMetadata, client *http.Client) (serializedLogs []byte, err error) {
 	payload, err := config.WebhookModeToConfig[config.Global.WebhookMode].EnvironmentLogReconstructorFunc(logs)
+
+	// fmt.Printf("Payload: %s\n", payload)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to reconstruct deploy log lines: %w", err)
 	}

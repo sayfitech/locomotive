@@ -5,6 +5,7 @@ import (
 	"strings"
 	"log/slog"
 	"sync/atomic"
+	// "fmt"
 
 	"github.com/brody192/locomotive/internal/logger"
 	"github.com/brody192/locomotive/internal/config"
@@ -79,19 +80,24 @@ func handleDeployLogsAsync(
 					continue
 				}
 
-				if serializedLogs, err := webhook.SendDeployLogsWebhook(filteredLogs); err != nil {
-					attrs := []any{logger.ErrAttr(err)}
+				// fmt.Printfs("Payload: %s\n", filteredLogs)
 
-					if serializedLogs != nil {
-						attrs = append(attrs, slog.String("serialized_logs", string(serializedLogs)))
+				for _, log := range filteredLogs {
+					// Send each log individually
+					if serializedLog, err := webhook.SendDeployLogsWebhook([]environment_logs.EnvironmentLogWithMetadata{log}); err != nil {
+						attrs := []any{logger.ErrAttr(err)}
+
+						if serializedLog != nil {
+							attrs = append(attrs, slog.String("serialized_log", string(serializedLog)))
+						}
+
+						logger.Stderr.Error("error sending deploy log webhook", attrs...)
+						continue
 					}
 
-					logger.Stderr.Error("error sending deploy logs webhook(s)", attrs...)
-
-					continue
+					// Increment processed count by 1 for each log
+					deployLogsProcessed.Add(1)
 				}
-
-				deployLogsProcessed.Add(int64(len(logs)))
 			}
 		}
 	}()
