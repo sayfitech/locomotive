@@ -72,7 +72,11 @@ func handleDeployLogsAsync(
 						}
 					}
 
+					logEntry.Log.Severity = "error"
 
+					// fmt.Printf("log: %s\n", logEntry);
+
+					// break
 					filteredLogs = append(filteredLogs, logEntry)
 				}
 
