@@ -61,8 +61,15 @@ func main() {
 		slog.String("min_severity", string(config.Global.MinSeverity)),
 	)
 	fmt.Printf("severity level: %s\n", config.Global.MinSeverity)
-	fmt.Printf("whitelist filter: %s\n", config.Global.Whitelist)
-	fmt.Printf("blacklist filter: %s\n", config.Global.Blacklist)
+	fmt.Println("whitelist filter:")
+	for _, v := range config.Global.Whitelist {
+		fmt.Printf("  \"%s\"\n", v)
+	}
+
+	fmt.Println("blacklist filter:")
+	for _, v := range config.Global.Blacklist {
+		fmt.Printf("  \"%s\"\n", v)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
