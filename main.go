@@ -80,16 +80,17 @@ func main() {
 	httpLogsProcessed := atomic.Int64{}
 
 	reportStatusAsync(&deployLogsProcessed, &httpLogsProcessed)
-
+	filter_settings, _ := NewFilterSettings(
+		config.Global.MinSeverity,
+		config.Global.Whitelist,
+		config.Global.Blacklist,
+	)
+	fmt.Printf("%s\n", filter_settings)
 	handleDeployLogsAsync(
 		ctx,
 		&deployLogsProcessed,
 		serviceLogTrack,
-		FilterSettings{
-			Min_severity: config.Global.MinSeverity,
-			Whitelist:    config.Global.Whitelist,
-			Blacklist:    config.Global.Blacklist,
-		},
+		filter_settings,
 	)
 	handleHttpLogsAsync(ctx, &httpLogsProcessed, httpLogTrack)
 

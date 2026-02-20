@@ -5,7 +5,8 @@ import (
 	"strings"
 	"log/slog"
 	"sync/atomic"
-	// "fmt"
+	"regexp"
+	"fmt"
 
 	"github.com/brody192/locomotive/internal/logger"
 	"github.com/brody192/locomotive/internal/config"
@@ -14,18 +15,60 @@ import (
 	"github.com/brody192/locomotive/internal/webhook"
 )
 
-type FilterSettings struct{
-	Min_severity config.SeverityLevel
-	Whitelist []string
-	Blacklist []string
+type FilterSettings struct {
+	MinSeverity config.SeverityLevel
+	Whitelist   []*regexp.Regexp
+	Blacklist   []*regexp.Regexp
 }
+func NewFilterSettings(
+	minSeverity config.SeverityLevel,
+	whitelistPatterns []string,
+	blacklistPatterns []string,
+) (FilterSettings, error) {
+
+	compile := func(patterns []string) ([]*regexp.Regexp, error) {
+		result := make([]*regexp.Regexp, 0, len(patterns))
+
+		for _, pattern := range patterns {
+			pattern = strings.TrimSpace(pattern)
+			if pattern == "" {
+				continue
+			}
+
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return nil, fmt.Errorf("invalid regex '%s': %w", pattern, err)
+			}
+
+			result = append(result, re)
+		}
+
+		return result, nil
+	}
+
+	whitelist, err := compile(whitelistPatterns)
+	if err != nil {
+		return FilterSettings{}, fmt.Errorf("whitelist error: %w", err)
+	}
+
+	blacklist, err := compile(blacklistPatterns)
+	if err != nil {
+		return FilterSettings{}, fmt.Errorf("blacklist error: %w", err)
+	}
+
+	return FilterSettings{
+		MinSeverity: minSeverity,
+		Whitelist:   whitelist,
+		Blacklist:   blacklist,
+	}, nil
+}
+
 
 func handleDeployLogsAsync(
 	ctx context.Context,
 	deployLogsProcessed *atomic.Int64,
 	serviceLogTrack chan []environment_logs.EnvironmentLogWithMetadata,
 	filter FilterSettings,
-	// min_severity config.SeverityLevel
 ) {
 	go func() {
 		for {
@@ -40,16 +83,18 @@ func handleDeployLogsAsync(
 						strings.ToLower(strings.TrimSpace(logEntry.Log.Severity)),
 					)
 
-					if logSeverity.Rank() < filter.Min_severity.Rank() {
+					if logSeverity.Rank() < filter.MinSeverity.Rank() {
 						continue
 					}
 
 					logMsg := logEntry.Log.Message
 
+					// fmt.Printf("candidate message: %s\n", logEntry.Log)
+
 					if len(filter.Whitelist) > 0 {
 						matched := false
-						for _, w := range filter.Whitelist {
-							if strings.Contains(logMsg, w) {
+						for _, re := range filter.Whitelist {
+							if re.MatchString(logMsg) {
 								matched = true
 								break
 							}
@@ -61,8 +106,8 @@ func handleDeployLogsAsync(
 
 					if len(filter.Blacklist) > 0 {
 						blocked := false
-						for _, b := range filter.Blacklist {
-							if strings.Contains(logMsg, b) {
+						for _, re := range filter.Blacklist {
+							if re.MatchString(logMsg) {
 								blocked = true
 								break
 							}
@@ -71,6 +116,8 @@ func handleDeployLogsAsync(
 							continue // blocked by blacklist
 						}
 					}
+
+					// fmt.Printf("error message: %s\n", logEntry.Log)
 
 					logEntry.Log.Severity = "error"
 
