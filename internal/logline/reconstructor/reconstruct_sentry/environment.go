@@ -44,7 +44,6 @@ func EnvironmentLogsEnvelope(logs []environment_logs.EnvironmentLogWithMetadata)
 
 	// --- Line Two ---
 	secondLineData := LineTwo
-	secondLineData, _ = sjson.Set(secondLineData, "item_count", 1)
 	jsonObject.WriteString(secondLineData)
 	jsonObject.WriteByte('\n')
 
@@ -82,27 +81,6 @@ func EnvironmentLogsEnvelope(logs []environment_logs.EnvironmentLogWithMetadata)
 		thirdLineData, _ = sjson.Set(thirdLineData, "tags.log_type", v)
 	}
 
-	// --- Build item ---
-	// item := Item
-	// item, _ = sjson.Set(item, "timestamp", timestamp)
-	// item, _ = sjson.Set(item, "trace_id", generateRandomHexString())
-	// item, _ = sjson.Set(item, "level", normalizeLevel(log.Log.Severity))
-	// item, _ = sjson.Set(item, "severity_number", getSeverityNumber(log.Log.Severity))
-	// item, _ = sjson.Set(item, "body", util.StripAnsi(log.Log.Message))
-
-	// for _, attribute := range log.Log.Attributes {
-	// 	if reconstructor.IsCommonTimeStampAttribute(attribute.Key) {
-	// 		continue
-	// 	}
-	// 	if s, err := strconv.Unquote(attribute.Value); err == nil {
-	// 		attribute.Value = s
-	// 	}
-	// 	for key, value := range stringToSentryAttributes(attribute.Key, attribute.Value) {
-	// 		item, _ = sjson.Set(item, fmt.Sprintf("attributes.%s", key), value)
-	// 	}
-	// }
-
-	// thirdLineData, _ = sjson.SetRaw(thirdLineData, "items.0", item)
 
 	jsonObject.WriteString(thirdLineData)
 	jsonObject.WriteByte('\n')
