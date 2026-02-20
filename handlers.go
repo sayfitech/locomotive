@@ -15,6 +15,40 @@ import (
 	"github.com/brody192/locomotive/internal/webhook"
 )
 
+var (
+	errorRegex = regexp.MustCompile(`(?i)\b(ERR|ERROR|FATAL|PANIC)\b`)
+	warnRegex  = regexp.MustCompile(`(?i)\b(WRN|WARN|WARNING)\b`)
+	infoRegex  = regexp.MustCompile(`(?i)\b(INF|INFO)\b`)
+	debugRegex = regexp.MustCompile(`(?i)\b(DBG|DEBUG)\b`)
+
+	serializeRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+)
+
+func detectSeverityFromMessage(msg string) config.SeverityLevel {
+	// fmt.Printf("msg: %s\n", msg)
+	// matched_1 := infoRegex.MatchString(msg)
+	// fmt.Println(matched_1)
+	// matched_2 := errorRegex.MatchString(msg)
+	// fmt.Println(matched_2)
+	switch {
+		case errorRegex.MatchString(msg):
+			// fmt.Printf("Detect error\n")
+			return config.SeverityLevel("error")
+		case warnRegex.MatchString(msg):
+			// fmt.Printf("Detect warn\n")
+			return config.SeverityLevel("warn")
+		case infoRegex.MatchString(msg):
+			// fmt.Printf("Detect info\n")
+			return config.SeverityLevel("info")
+		case debugRegex.MatchString(msg):
+			// fmt.Printf("Detect debug\n")
+			return config.SeverityLevel("debug")
+		default:
+			// fmt.Printf("Detect failed -> default\n")
+			return config.SeverityLevel("error") // default fallback
+	}
+}
+
 type FilterSettings struct {
 	MinSeverity config.SeverityLevel
 	Whitelist   []*regexp.Regexp
@@ -79,17 +113,23 @@ func handleDeployLogsAsync(
 				filteredLogs := make([]environment_logs.EnvironmentLogWithMetadata, 0, len(logs))
 
 				for _, logEntry := range logs {
-					logSeverity := config.SeverityLevel(
-						strings.ToLower(strings.TrimSpace(logEntry.Log.Severity)),
-					)
+					// logSeverity := config.SeverityLevel(
+					// 	strings.ToLower(strings.TrimSpace(logEntry.Log.Severity)),
+					// )
+					// fmt.Printf("%q\n", logEntry.Log.Message)
+					var logMsg string = serializeRegex.ReplaceAllString(logEntry.Log.Message, "")
+					// fmt.Printf("%q\n", logMsg)
+					detectedSeverity := detectSeverityFromMessage(logMsg)
 
-					if logSeverity.Rank() < filter.MinSeverity.Rank() {
+					// fmt.Printf("Detected severity %s\n", detectedSeverity)
+					// fmt.Printf("candidate message: %s\n", logEntry.Log)
+
+					logEntry.Log.Severity = string(detectedSeverity)
+
+					if detectedSeverity.Rank() < filter.MinSeverity.Rank() {
 						continue
 					}
 
-					logMsg := logEntry.Log.Message
-
-					// fmt.Printf("candidate message: %s\n", logEntry.Log)
 
 					if len(filter.Whitelist) > 0 {
 						matched := false
@@ -119,11 +159,11 @@ func handleDeployLogsAsync(
 
 					// fmt.Printf("error message: %s\n", logEntry.Log)
 
-					logEntry.Log.Severity = "error"
+					// logEntry.Log.Severity = "error"
 
 					// fmt.Printf("log: %s\n", logEntry);
 
-					// break
+					continue
 					filteredLogs = append(filteredLogs, logEntry)
 				}
 
